@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>حاسبة أهداف فيبوناتشي بعد الاختراق</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f5f4;--card:#fff;--ink:#14231f;--mute:#5d6f69;--line:#d5ddda;--acc:#0f6b57;--gold:#b7791f;--bad:#b3392f;--ok:#0f6b57}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1815;--card:#17231f;--ink:#e6efec;--mute:#93a8a1;--line:#2b3d37;--acc:#4cc2a3;--gold:#e0a84a;--bad:#ef7d72;--ok:#4cc2a3}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 "IBM Plex Sans Arabic",Tahoma,sans-serif}
+main{max-width:760px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.5rem;margin:8px 0 4px}
+h2{font-size:1.05rem;margin:0 0 12px}
+p.sub{color:var(--mute);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:16px}
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tabs button{flex:1;padding:10px;border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;font:inherit;cursor:pointer}
+.tabs button[aria-pressed=true]{background:var(--acc);color:#fff;border-color:var(--acc)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:.88rem;color:var(--mute)}
+input{width:100%;padding:10px;margin-top:2px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font:inherit;direction:ltr;text-align:left}
+input:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.hint{font-size:.82rem;color:var(--mute);margin:10px 0 0}
+.msg{padding:10px 12px;border-radius:8px;margin-top:12px;font-size:.9rem;border:1px solid var(--line)}
+.msg.bad{border-color:var(--bad);color:var(--bad)}.msg.ok{border-color:var(--ok);color:var(--ok)}.msg.warn{border-color:var(--gold);color:var(--gold)}
+.tbl{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:420px}
+th,td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--line);font-size:.92rem}
+td.n{direction:ltr;text-align:left;font-variant-numeric:tabular-nums}
+tr.key td{font-weight:700;color:var(--gold)}
+.ladder{position:relative;height:300px;margin:8px 0}
+.ladder .ln{position:absolute;left:0;right:0;border-top:1px dashed var(--line);font-size:.78rem;display:flex;justify-content:space-between;direction:ltr;color:var(--mute)}
+.ladder .ln.t{border-top-color:var(--acc);color:var(--ink)}
+.ladder .ln.g{border-top:2px solid var(--gold);color:var(--gold);font-weight:700}
+.ladder .ln.s{border-top:2px solid var(--bad);color:var(--bad)}
+.ladder .ln.e{border-top:2px solid var(--ink)}
+.ladder .ln span{background:var(--card);padding:0 4px;transform:translateY(-50%)}
+.foot{font-size:.8rem;color:var(--mute)}
+@media(max-width:480px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<main>
+<h1>حاسبة أهداف فيبوناتشي بعد الاختراق</h1>
+<p class="sub">امتداد ABC (Trend-Based Fib Extension) مع التحقق من جودة التصحيح ونسبة المخاطرة للعائد.</p>
+
+<div class="card">
+  <div class="tabs" role="group" aria-label="اتجاه الحركة">
+    <button id="up" aria-pressed="true">صعود (اختراق مقاومة)</button>
+    <button id="dn" aria-pressed="false">هبوط (كسر دعم)</button>
+  </div>
+  <div class="tabs" role="group" aria-label="طريقة الحساب">
+    <button id="mABC" aria-pressed="true">الطريقة الأدق: A-B-C</button>
+    <button id="mRes" aria-pressed="false">بديل: ارتفاع النطاق</button>
+  </div>
+
+  <div id="abc" class="grid">
+    <label>A: بداية الموجة (القاع)<input id="A" type="number" step="any" inputmode="decimal"></label>
+    <label>B: نهاية الموجة (القمة)<input id="B" type="number" step="any" inputmode="decimal"></label>
+    <label>C: نهاية التصحيح<input id="C" type="number" step="any" inputmode="decimal"></label>
+  </div>
+  <div id="res" class="grid" hidden>
+    <label>قاع النطاق (الدعم)<input id="L" type="number" step="any" inputmode="decimal"></label>
+    <label>المقاومة المخترقة<input id="R" type="number" step="any" inputmode="decimal"></label>
+  </div>
+
+  <h2 style="margin-top:16px">اختياري: الدخول ووقف الخسارة</h2>
+  <div class="grid">
+    <label>سعر الدخول<input id="E" type="number" step="any" inputmode="decimal"></label>
+    <label>وقف الخسارة<input id="S" type="number" step="any" inputmode="decimal"></label>
+  </div>
+  <p class="hint">اقتراح: وقف الخسارة تحت المقاومة المخترقة أو تحت C (فوقها في حالة الهبوط).</p>
+  <div id="note"></div>
+</div>
+
+<div id="out" hidden>
+  <div class="card"><h2>الأهداف</h2><div class="tbl"><table id="tbl"></table></div></div>
+  <div class="card"><h2>خريطة الأسعار</h2><div class="ladder" id="ladder"></div></div>
+</div>
+
+<p class="foot">محتوى تعليمي وليس نصيحة استثمارية. الأهداف احتمالية، ويُفضّل تأكيد الاختراق بإغلاق شمعة وحجم تداول مرتفع.</p>
+</main>
+
+<script>
+const RATIOS=[0.618,1,1.272,1.618,2,2.618];
+let dir=1, mode='abc';
+const $=id=>document.getElementById(id);
+const num=id=>{const v=parseFloat($(id).value);return isNaN(v)?null:v};
+
+function fmt(x,d){return x.toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d})}
+function decimals(vals){
+  const m=Math.min(...vals.filter(v=>v>0));
+  if(m>=1000)return 2; if(m>=1)return 3; if(m>=0.01)return 5; return 8;
+}
+function setPressed(a,b,on){$(a).setAttribute('aria-pressed',on);$(b).setAttribute('aria-pressed',!on)}
+
+$('up').onclick=()=>{dir=1;setPressed('up','dn',true);calc()};
+$('dn').onclick=()=>{dir=-1;setPressed('up','dn',false);calc()};
+$('mABC').onclick=()=>{mode='abc';setPressed('mABC','mRes',true);$('abc').hidden=false;$('res').hidden=true;calc()};
+$('mRes').onclick=()=>{mode='res';setPressed('mABC','mRes',false);$('abc').hidden=true;$('res').hidden=false;calc()};
+document.querySelectorAll('input').forEach(i=>i.addEventListener('input',calc));
+
+function msg(t,c){return `<div class="msg ${c}">${t}</div>`}
+
+function calc(){
+  const note=$('note'); note.innerHTML=''; $('out').hidden=true;
+  let base, size, anchor, notes='';
+  const up=dir===1;
+
+  if(mode==='abc'){
+    const A=num('A'),B=num('B'),C=num('C');
+    if(A===null||B===null||C===null)return;
+    const move=(B-A)*dir; // يجب أن تكون موجبة
+    if(move<=0){note.innerHTML=msg(up?'في الصعود يجب أن يكون B أعلى من A.':'في الهبوط يجب أن يكون B أدنى من A.','bad');return}
+    if((B-C)*dir<=0||(C-A)*dir<=0){note.innerHTML=msg(up?'يجب أن يكون C بين A و B (أقل من B وأعلى من A).':'يجب أن يكون C بين A و B (أعلى من B وأدنى من A).','bad');return}
+    const retr=((B-C)*dir)/move;
+    const p=(retr*100).toFixed(1);
+    if(retr>=0.236&&retr<=0.786) notes=msg(`عمق التصحيح ${p}% من الموجة: ضمن النطاق السليم (23.6% إلى 78.6%).`,'ok');
+    else if(retr<0.236) notes=msg(`عمق التصحيح ${p}% فقط: تصحيح ضحل جدًا، والاتجاه قوي لكن الإشارة أقل موثوقية.`,'warn');
+    else notes=msg(`عمق التصحيح ${p}%: تصحيح عميق، وقد يضعف سيناريو الاستمرار.`,'warn');
+    base=C; size=Math.abs(B-A); anchor=B;
+  }else{
+    const L=num('L'),R=num('R');
+    if(L===null||R===null)return;
+    const h=Math.abs(R-L);
+    if(h<=0){note.innerHTML=msg('أدخل قاعًا ومقاومة مختلفين.','bad');return}
+    if(up&&R<=L||!up&&R>=L){note.innerHTML=msg(up?'في الصعود يجب أن تكون المقاومة أعلى من القاع.':'في الهبوط يجب أن يكون الكسر أدنى من القمة.','bad');return}
+    base=R; size=h; anchor=R;
+    notes=msg('هذه طريقة تقريبية: ارتفاع النطاق يُضاف فوق المقاومة. الطريقة A-B-C أدق عند توفر تصحيح واضح.','warn');
+  }
+
+  const E=num('E'),S=num('S');
+  let risk=null;
+  if(E!==null&&S!==null){
+    risk=(E-S)*dir;
+    if(risk<=0){notes+=msg(up?'وقف الخسارة يجب أن يكون أقل من سعر الدخول.':'وقف الخسارة يجب أن يكون أعلى من سعر الدخول.','bad');risk=null}
+  }
+  note.innerHTML=notes;
+
+  const rows=RATIOS.map(r=>({r,price:base+dir*size*r}));
+  const all=rows.map(x=>x.price).concat([base,anchor],E!==null?[E]:[],S!==null?[S]:[]);
+  const d=decimals(all);
+
+  let h='<tr><th>النسبة</th><th>السعر المستهدف</th><th>المسافة من الدخول/الاختراق</th>'+(risk?'<th>مخاطرة:عائد</th>':'')+'</tr>';
+  const ref=E!==null?E:anchor;
+  rows.forEach(x=>{
+    const pct=((x.price-ref)/ref*100);
+    const rr=risk?((x.price-E)*dir/risk):null;
+    h+=`<tr class="${x.r===1.618?'key':''}"><td>${x.r}${x.r===1.618?' (ذهبي)':''}</td><td class="n">${fmt(x.price,d)}</td><td class="n">${pct>=0?'+':''}${pct.toFixed(2)}%</td>`+(risk?`<td class="n">1:${rr.toFixed(2)}</td>`:'')+'</tr>';
+  });
+  $('tbl').innerHTML=h;
+  $('out').hidden=false;
+  ladder(rows,base,anchor,E,S,d);
+}
+
+function ladder(rows,base,anchor,E,S,d){
+  const items=rows.map(x=>({p:x.price,l:`${x.r}`,c:x.r===1.618?'g':'t'}));
+  items.push({p:anchor,l:'اختراق/قمة',c:''});
+  if(base!==anchor)items.push({p:base,l:'C',c:''});
+  if(E!==null)items.push({p:E,l:'دخول',c:'e'});
+  if(S!==null)items.push({p:S,l:'وقف',c:'s'});
+  const lo=Math.min(...items.map(i=>i.p)),hi=Math.max(...items.map(i=>i.p));
+  const rng=hi-lo||1;
+  $('ladder').innerHTML=items.map(i=>{
+    const top=(1-(i.p-lo)/rng)*92+4;
+    return `<div class="ln ${i.c}" style="top:${top}%"><span>${i.l}</span><span>${fmt(i.p,d)}</span></div>`;
+  }).join('');
+}
+</script>
+</body>
+</html>
